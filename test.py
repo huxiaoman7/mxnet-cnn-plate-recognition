@@ -1,6 +1,12 @@
 #coding=utf-8
-# pylint: disable=C0111,too-many-arguments,too-many-instance-attributes,too-many-locals,redefined-outer-name,fixme
-# pylint: disable=superfluous-parens, no-member, invalid-name
+""" test.py:对任意一张或一个文件夹的车牌图片做识别预测
+    输入:单张图片地址或文件夹地址
+    输出:单张图片的准确率或文件夹下所有图片的准确率
+"""
+
+__author__ = "Huxiaoman"
+__copyright__ = "Copyright (c) 2017 "
+
 import sys
 sys.path.insert(0, "../../python")
 import mxnet as mx
@@ -10,6 +16,7 @@ import os
 import os.path
 from io import BytesIO
 #from train import gen_rand, gen_sample
+
 # 所有车牌字符
 chars = ["京", "沪", "津", "渝", "冀", "晋", "蒙", "辽", "吉", "黑", "苏", "浙", "皖", "闽", "赣", "鲁", "豫", "鄂", "湘", "粤", "桂", "琼", "川", "贵", "云", "藏", "陕", "甘", "青", "宁", "新", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" ];
 
@@ -25,14 +32,14 @@ def getnet():
     pool2 = mx.symbol.Pooling(data=conv2, pool_type="avg", kernel=(2,2), stride=(1, 1))
     relu2 = mx.symbol.Activation(data=pool2, act_type="relu")
 
-#    conv3 = mx.symbol.Convolution(data=relu2, kernel=(3,3), num_filter=32)
-#    pool3 = mx.symbol.Pooling(data=conv3, pool_type="avg", kernel=(2,2), stride=(1, 1))
-#    relu3 = mx.symbol.Activation(data=pool3, act_type="relu")
-#    
-#    conv4 = mx.symbol.Convolution(data=relu3, kernel=(3,3), num_filter=32)
-#    pool4 = mx.symbol.Pooling(data=conv4, pool_type="avg", kernel=(2,2), stride=(1, 1))
-#    relu4 = mx.symbol.Activation(data=pool4, act_type="relu")
-#
+    conv3 = mx.symbol.Convolution(data=relu2, kernel=(3,3), num_filter=32)
+    pool3 = mx.symbol.Pooling(data=conv3, pool_type="avg", kernel=(2,2), stride=(1, 1))
+    relu3 = mx.symbol.Activation(data=pool3, act_type="relu")
+    
+    conv4 = mx.symbol.Convolution(data=relu3, kernel=(3,3), num_filter=32)
+    pool4 = mx.symbol.Pooling(data=conv4, pool_type="avg", kernel=(2,2), stride=(1, 1))
+    relu4 = mx.symbol.Activation(data=pool4, act_type="relu")
+
     flatten = mx.symbol.Flatten(data = relu2)
     fc1 = mx.symbol.FullyConnected(data = flatten, num_hidden = 120)
     fc21 = mx.symbol.FullyConnected(data = fc1, num_hidden = 65)
@@ -52,8 +59,6 @@ def Accuracy_pred(label,pred):
     行准确率：如果一个车牌7个字符全部预测正确，行准确率=1，否则=0。
     列准确率：预测正确的车牌字符个数/ 7
     '''
-    #print label[0].decode('utf-8')
-    #print pred[0].decode('utf-8')
     hit = 0
     total = 1
     # 预测第一个中文字符是否相同
@@ -76,8 +81,8 @@ def Accuracy_pred(label,pred):
     acc_row = 1.0 * hit_row / total
     #列准确率
     acc_col = 1.0 * hit / total
-    #print ("预测行准确率为:" + str(acc_row))
-    #print ("预测列准确率为:" + str(acc_col))
+    print ("预测行准确率为:" + str(acc_row))
+    print ("预测列准确率为:" + str(acc_col))
     #print acc_row,acc_col
     return acc_row,acc_col
 
@@ -86,7 +91,6 @@ def batch_read(rootdir):
     pathlist = []
     for parent,dirnames,filenames in os.walk(rootdir):    
        	for filename in filenames:                        
-    	    print filename
 	    filename_path = os.path.join(parent,filename)
 	    pathlist.append(filename_path)
     return pathlist
@@ -112,9 +116,6 @@ def TestRecognizeBatch(path):
     f=open('label.txt','r')
     for line in f.readlines():
 	lines = line.split("\n")
-        #print lines
-        #lines_list = strtolist(lines)
-	#print lines_list
 	label_list.append(lines)
     f.close()
     label = [strtolist(label_list[i][0]) for i in range(len(label_list))]
@@ -208,9 +209,8 @@ def TestRecognizeOne(img):
         line += chars[result]+" "
         pred.append(chars[result])
     print ('predicted: ' + line)
-    #print pred
+    # 单张图片的label，需要在此处写好
     label = ['川','A','0','9','5','Q','5']
-    #print label
     Accuracy_pred(label,pred)
     cv2.waitKey(0)
     return pred
