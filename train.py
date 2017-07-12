@@ -1,6 +1,8 @@
 #coding=utf-8
-# pylint: disable=C0111,too-many-arguments,too-many-instance-attributes,too-many-locals,redefined-outer-name,fixme
-# pylint: disable=superfluous-parens, no-member, invalid-name
+""" train.py:训练CNN模型"""
+
+__author__ = "Huxiaoman"
+__copyright__ = "Copyright (c) 2017 "
 
 import sys
 sys.path.insert(0, "../../python")
