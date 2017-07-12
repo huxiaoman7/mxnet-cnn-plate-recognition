@@ -41,7 +41,7 @@ python test.py /Users/shelter/test
 output:
 预测车牌号码为:津 K 4 2 R M Y
 输入图片数量:100
-输入图片行准确率:0.42
+输入图片行准确率:0.72
 输入图片列准确率:0.86
 ```
 
