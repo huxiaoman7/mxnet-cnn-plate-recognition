@@ -176,23 +176,6 @@ class GenPlate:
             com = addNoise(com);
             return com
 
-#    def genPlateString(self,pos,val):
-#        plateStr = "";
-#        box = [0,0,0,0,0,0,0];
-#        if(pos!=-1):
-#            box[pos]=1;
-#        for unit,cpos in zip(box,xrange(len(box))):
-#            if unit == 1:
-#                plateStr += val
-#            else:
-#                if cpos == 0:
-#                    plateStr += chars[r(31)]
-#                elif cpos == 1:
-#                    plateStr += chars[41+r(24)]
-#                else:
-#                    plateStr += chars[31 + r(34)]
-#
-#        return plateStr;
     def genPlateString(self,pos,val):
         '''
 	生成车牌String,存为label图片
@@ -235,23 +218,8 @@ class GenPlate:
                 img = cv2.resize(img,size);
                 cv2.imwrite(outputPath + "/" + str(i).zfill(2) + ".jpg", img);
 		outfile.write(str(plate)+"\n")
-		#outfile.writelines(["%s\n" % item for item in plate])
-#    def writeplatelist(self,batchSize):
-#        outfile = open('label.txt','w')
-#	for i in range(batchSize):
-#            plate = G.genPlateList(-1,-1)
-#            outfile.write(str(plate)+"\n" )   
-#	outfile.close()
-#
 G = GenPlate("./font/platech.ttf",'./font/platechar.ttf',"./NoPlates")
-#G.genBatch(1000,2,range(31,65),"./plate_1000",(272,72))
 
 
 if __name__=='__main__':
     G.genBatch(int(sys.argv[1]),2,range(31,65),sys.argv[2],(272,72))
-#G.writeplatelist(100)
-
-#outfile = open('label.txt','w')
-#sample_list = [line +'\n' for line in G.writeplatelist(100)]
-#outfile.write(str())
-#outfile.writelines(sample_list)
