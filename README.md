@@ -27,13 +27,13 @@ python genPlate.py 100 /Users/shelter/plate_100
 #### 2.训练CNN模型[^code]
 ```
 python train.py 
-
 ```
 
 #### 3.预测车牌准确率
 ```
 #随机生成100张车牌图片
 python genPlate.py 100 /Users/shelter/test
+
 #批量预测测试图片准确率
 python test.py /Users/shelter/test
 
