@@ -1,5 +1,7 @@
 #coding=utf-8
-""" train.py:训练CNN模型"""
+""" train.py:训练CNN模型
+    本代码禁止外传
+"""
 
 __author__ = "Huxiaoman"
 __copyright__ = "Copyright (c) 2017 "
@@ -16,21 +18,67 @@ import scipy.misc
 import math
 import mxnet.misc
 
-class OCRBatch(object):
-    def __init__(self, data_names, data, label_names, label):
-        self.data = data
-        self.label = label
-        self.data_names = data_names
-        self.label_names = label_names
+#多进程操作读取数据
+class DataIter(mx.io.DataIter):
+    def __init__(self,count,batch_size,num_label,height,width):
+        super(DataIter,self).__init__()
+        self.batch_size = batch_size
+        self.cursor = -batch_size
+        self.num_data = count
+        self.height = height
+        self.width = width
+        self.provide_data = [('data',(batch_size,3,height,width))]
+        self.provide_label = [('softmax_label',(self.batch_size,num_label))]
+        # 首先定义一个Queue对象，用来存储 Prefetch 的数据
+	self.q = multiprocessing.Queue(maxsize = 2)
+        # 创建4个读取数据的进程，具体的读取方法在self.write中
+        self.pws = [multiprocessing.Process(target = self.write) for i in range(4)]
+	# 此处代码好像有问题
+        for pw in self.pws:
+	    pw.daemon = True
+	    pw.start()
 
-    @property
-    def provide_data(self):
-        return [(n, x.shape) for n, x in zip(self.data_names, self.data)]
+    def write(self):
+        while True:
+	    for i in range(self.batch_size):
+	        # 获取一张图片,numpy.array 格式
+                one_img = func_get_img_data()
+		# 获取该图片的label数据, numpy.array格式
+		one_label = func_get_label_data()
+		data.append(one_img)
+		label.append(one_label)
+            data_all = [mx.nd.array(data)]
+	    label_all = [mx.nd.array(label)]
+	    # 创建一个 Batch 的数据
+	    data_batch = OneBatch(data_all,label_all)
+	    # block = True,允许在队列满的时候阻塞，timeout = None, 永不超时
+	    self.q.put(obj = data_batch,block = True,timeout = None)
+    def iter_next(self):
+	if self.q.empty():
+	    logging.debug("Waiting for data")
+	if self.iter_next():
+	    return self.q.get(block = True,timeout = None)
+	else:
+	    raise StopIteration
 
-    @property
-    def provide_label(self):
-        return [(n, x.shape) for n, x in zip(self.label_names, self.label)]
+    def reset(self):
+	self.cursor = -self.batch_size + (self.cursor%self.num_data) % self.batch_size
 
+#class OCRBatch(object):
+#    def __init__(self, data_names, data, label_names, label):
+#        self.data = data
+#        self.label = label
+#        self.data_names = data_names
+#        self.label_names = label_names
+#
+#    @property
+#    def provide_data(self):
+#        return [(n, x.shape) for n, x in zip(self.data_names, self.data)]
+#
+#    @property
+#    def provide_label(self):
+#        return [(n, x.shape) for n, x in zip(self.label_names, self.label)]
+#
 def rand_range(lo,hi):
     return lo+r(hi-lo);
 
@@ -60,36 +108,36 @@ def gen_sample(genplate, width, height):
     #print label,img
     return label, img
 
-class OCRIter(mx.io.DataIter):
-    def __init__(self, count, batch_size, num_label, height, width):
-        super(OCRIter, self).__init__()
-        self.genplate = GenPlate("./font/platech.ttf",'./font/platechar.ttf','./NoPlates')
-        self.batch_size = batch_size
-        self.count = count
-        self.height = height
-        self.width = width
-        self.provide_data = [('data', (batch_size, 3, height, width))]
-        self.provide_label = [('softmax_label', (self.batch_size, num_label))]
-        print "start"
-    def __iter__(self):
-
-        for k in range(self.count / self.batch_size):
-            data = []
-            label = []
-            for i in range(self.batch_size):
-                num, img = gen_sample(self.genplate, self.width, self.height)
-                data.append(img)
-                label.append(num)
-
-            data_all = [mx.nd.array(data)]
-            label_all = [mx.nd.array(label)]
-            data_names = ['data']
-            label_names = ['softmax_label']
-            data_batch = OCRBatch(data_names, data_all, label_names, label_all)
-            yield data_batch
-
-    def reset(self):
-        pass
+#class OCRIter(mx.io.DataIter):
+#    def __init__(self, count, batch_size, num_label, height, width):
+#        super(OCRIter, self).__init__()
+#        self.genplate = GenPlate("./font/platech.ttf",'./font/platechar.ttf','./NoPlates')
+#        self.batch_size = batch_size
+#        self.count = count
+#        self.height = height
+#        self.width = width
+#        self.provide_data = [('data', (batch_size, 3, height, width))]
+#        self.provide_label = [('softmax_label', (self.batch_size, num_label))]
+#        print "start"
+#    def __iter__(self):
+#
+#        for k in range(self.count / self.batch_size):
+#            data = []
+#            label = []
+#            for i in range(self.batch_size):
+#                num, img = gen_sample(self.genplate, self.width, self.height)
+#                data.append(img)
+#                label.append(num)
+#
+#            data_all = [mx.nd.array(data)]
+#            label_all = [mx.nd.array(label)]
+#            data_names = ['data']
+#            label_names = ['softmax_label']
+#            data_batch = OCRBatch(data_names, data_all, label_names, label_all)
+#            yield data_batch
+#
+#    def reset(self):
+#        pass
 
 def get_ocrnet():
     data = mx.symbol.Variable('data')
@@ -112,13 +160,27 @@ def get_ocrnet():
 
     flatten = mx.symbol.Flatten(data = relu2)
     fc1 = mx.symbol.FullyConnected(data = flatten, num_hidden = 120)
-    fc21 = mx.symbol.FullyConnected(data = fc1, num_hidden = 65)
-    fc22 = mx.symbol.FullyConnected(data = fc1, num_hidden = 65)
-    fc23 = mx.symbol.FullyConnected(data = fc1, num_hidden = 65)
-    fc24 = mx.symbol.FullyConnected(data = fc1, num_hidden = 65)
-    fc25 = mx.symbol.FullyConnected(data = fc1, num_hidden = 65)
-    fc26 = mx.symbol.FullyConnected(data = fc1, num_hidden = 65)
-    fc27 = mx.symbol.FullyConnected(data = fc1, num_hidden = 65)
+    fc21_dropout = mx.symbol.Dropout(fc1,p=0.5)
+    fc21 = mx.symbol.FullyConnected(data = fc21_dropout, num_hidden = 65)
+
+    fc22_dropout = mx.symbol.Dropout(fc1,p=0.5)
+    fc22 = mx.symbol.FullyConnected(data = fc22_dropout, num_hidden = 65)
+
+    fc23_dropout = mx.symbol.Dropout(fc1,p=0.5)
+    fc23 = mx.symbol.FullyConnected(data = fc23_dropout, num_hidden = 65)
+
+    fc24_dropout = mx.symbol.Dropout(fc1,p=0.5)
+    fc24 = mx.symbol.FullyConnected(data = fc24_dropout, num_hidden = 65)
+
+    fc25_dropout = mx.symbol.Dropout(fc1,p=0.5)
+    fc25 = mx.symbol.FullyConnected(data = fc25_dropout, num_hidden = 65)
+
+    fc26_dropout = mx.symbol.Dropout(fc1,p=0.5)
+    fc26 = mx.symbol.FullyConnected(data = fc26_dropout, num_hidden = 65)
+
+    fc27_dropout = mx.symbol.Dropout(fc1,p=0.5)
+    fc27 = mx.symbol.FullyConnected(data = fc27_dropout, num_hidden = 65)
+
     fc2 = mx.symbol.Concat(*[fc21, fc22, fc23, fc24,fc25,fc26,fc27], dim = 0)
     label = mx.symbol.transpose(data = label)
     label = mx.symbol.Reshape(data = label, target_shape = (0, ))
@@ -162,27 +224,67 @@ def _get_lr_scheduler(args, kv):
 
 def train():
     network = get_ocrnet()
-    devs = [mx.gpu(i) for i in range(2)]
-    #lr, lr_scheduler = _get_lr_scheduler(args, kv)     
+    batch_size = 8
+    num_epoch = 15
+    num_gpus = 2
+    head = '%(asctime)-15s %(message)s'
+    logging.basicConfig(level =logging.DEBUG,format=head)
+    devs = [mx.cpu(i) for i in range(num_gpus)]
     model = mx.model.FeedForward(ctx=devs, #使用GPU来跑
                                  symbol = network,
-                                 num_epoch = 15,
-				 #optimizer = 'adam',
+                                 num_epoch = num_epoch,
+                                 #optimizer = 'adam',
                                  learning_rate = 0.5,
-                                 lr_scheduler=mx.misc.FactorScheduler(step=5), 
-				 wd = 0.00001,
+                                 lr_scheduler=mx.misc.FactorScheduler(step=5),
+                                 wd = 0.00001,
                                  initializer = mx.init.Xavier(factor_type="in", magnitude=2.34),
-			         momentum = 0.9)
-    batch_size = 8
-    data_train = OCRIter(500000, batch_size, 7, 30, 120)
-    data_test = OCRIter(10000, batch_size,7, 30, 120)
+                                 momentum = 0.9)
 
-    head = '%(asctime)-15s %(message)s'
-    logging.basicConfig(level=logging.DEBUG, format=head)
+    train_dataiter = mx.io.ImageRecordIter(
+            path_imgrec=datadir+"/train.rec",
+            mean_img=datadir+"/train.bin",
+            rand_crop=True,
+            rand_mirror=True,
+            data_shape=(3,20,20),
+            batch_size=batch_size,
+            preprocess_threads=4)
+    test_dataiter = mx.io.ImageRecordIter(
+            path_imgrec=datadir+"/test.rec",
+            mean_img=datadir+"/test.bin",
+            rand_crop=False,
+            rand_mirror=False,
+            data_shape=(3,20,20),
+            batch_size=batch_size,
+            preprocess_threads=4)
+
     model.fit(X = data_train, eval_data = data_test, eval_metric = Accuracy, batch_end_callback=mx.callback.Speedometer(batch_size, 50))
-    model.save("/data/mxnet/cnn-ocr-04")
+    model.save("/data/mxnet/cnn-ocr-02")
     print gen_rand()
 
+
+#def train():
+#    network = get_ocrnet()
+#    devs = [mx.cpu(i) for i in range(2)]
+#    #lr, lr_scheduler = _get_lr_scheduler(args, kv)     
+#    model = mx.model.FeedForward(ctx=devs, #使用GPU来跑
+#                                 symbol = network,
+#                                 num_epoch = 15,
+#				 #optimizer = 'adam',
+#                                 learning_rate = 0.5,
+#                                 #lr_scheduler=mx.misc.FactorScheduler(step=5), 
+#				 wd = 0.00001,
+#                                 initializer = mx.init.Xavier(factor_type="in", magnitude=2.34),
+#			         momentum = 0.9)
+#    batch_size = 8
+#    data_train = DataIter(40000, batch_size, 7, 30, 120)
+#    data_test = DataIter(10000, batch_size,7, 30, 120)
+#
+#    head = '%(asctime)-15s %(message)s'
+#    logging.basicConfig(level=logging.DEBUG, format=head)
+#    model.fit(X = data_train, eval_data = data_test, eval_metric = Accuracy, batch_end_callback=mx.callback.Speedometer(batch_size, 50))
+#    model.save("/data/mxnet/cnn-ocr-04")
+#    print gen_rand()
+#
 
 if __name__ == '__main__':
     train();
