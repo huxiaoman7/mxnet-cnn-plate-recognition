@@ -8,15 +8,33 @@ __copyright__ = "Copyright (c) 2017 "
 
 import sys
 sys.path.insert(0, "../../python")
+sys.setrecursionlimit(1000000)
 import logging
 import mxnet as mx
 import numpy as np
 import cv2, random
 from io import BytesIO
-from genplate import *
+from genPlate import *
 import scipy.misc
 import math
 import mxnet.misc
+import multiprocessing
+
+class OneBatch(object):
+    def __init__(self, data_names, data, label_names, label):
+        self.data = data
+        self.label = label
+        self.data_names = data_names
+        self.label_names = label_names
+
+    @property
+    def provide_data(self):
+        return [(n, x.shape) for n, x in zip(self.data_names, self.data)]
+
+    @property
+    def provide_label(self):
+        return [(n, x.shape) for n, x in zip(self.label_names, self.label)]
+
 
 #多进程操作读取数据
 class DataIter(mx.io.DataIter):
@@ -33,7 +51,6 @@ class DataIter(mx.io.DataIter):
 	self.q = multiprocessing.Queue(maxsize = 2)
         # 创建4个读取数据的进程，具体的读取方法在self.write中
         self.pws = [multiprocessing.Process(target = self.write) for i in range(4)]
-	# 此处代码好像有问题
         for pw in self.pws:
 	    pw.daemon = True
 	    pw.start()
@@ -50,7 +67,7 @@ class DataIter(mx.io.DataIter):
             data_all = [mx.nd.array(data)]
 	    label_all = [mx.nd.array(label)]
 	    # 创建一个 Batch 的数据
-	    data_batch = OneBatch(data_all,label_all)
+	    data_batch = OneBatch(data_all,label_all,data_names,label_names)
 	    # block = True,允许在队列满的时候阻塞，timeout = None, 永不超时
 	    self.q.put(obj = data_batch,block = True,timeout = None)
     def iter_next(self):
@@ -104,8 +121,6 @@ def gen_sample(genplate, width, height):
     img = cv2.resize(img, (width, height))
     img = np.multiply(img, 1/255.0)
     img = img.transpose(2, 0, 1)
-    #### 输出
-    #print label,img
     return label, img
 
 #class OCRIter(mx.io.DataIter):
@@ -222,69 +237,69 @@ def _get_lr_scheduler(args, kv):
     steps = [epoch_size * (x-begin_epoch) for x in step_epochs if x-begin_epoch > 0]    
     return (lr, mx.lr_scheduler.MultiFactorScheduler(step=steps, factor=args.lr_factor))
 
-def train():
-    network = get_ocrnet()
-    batch_size = 8
-    num_epoch = 15
-    num_gpus = 2
-    head = '%(asctime)-15s %(message)s'
-    logging.basicConfig(level =logging.DEBUG,format=head)
-    devs = [mx.cpu(i) for i in range(num_gpus)]
-    model = mx.model.FeedForward(ctx=devs, #使用GPU来跑
-                                 symbol = network,
-                                 num_epoch = num_epoch,
-                                 #optimizer = 'adam',
-                                 learning_rate = 0.5,
-                                 lr_scheduler=mx.misc.FactorScheduler(step=5),
-                                 wd = 0.00001,
-                                 initializer = mx.init.Xavier(factor_type="in", magnitude=2.34),
-                                 momentum = 0.9)
-
-    train_dataiter = mx.io.ImageRecordIter(
-            path_imgrec=datadir+"/train.rec",
-            mean_img=datadir+"/train.bin",
-            rand_crop=True,
-            rand_mirror=True,
-            data_shape=(3,20,20),
-            batch_size=batch_size,
-            preprocess_threads=4)
-    test_dataiter = mx.io.ImageRecordIter(
-            path_imgrec=datadir+"/test.rec",
-            mean_img=datadir+"/test.bin",
-            rand_crop=False,
-            rand_mirror=False,
-            data_shape=(3,20,20),
-            batch_size=batch_size,
-            preprocess_threads=4)
-
-    model.fit(X = data_train, eval_data = data_test, eval_metric = Accuracy, batch_end_callback=mx.callback.Speedometer(batch_size, 50))
-    model.save("/data/mxnet/cnn-ocr-02")
-    print gen_rand()
-
-
 #def train():
 #    network = get_ocrnet()
-#    devs = [mx.cpu(i) for i in range(2)]
-#    #lr, lr_scheduler = _get_lr_scheduler(args, kv)     
+#    batch_size = 8
+#    num_epoch = 15
+#    num_gpus = 2
+#    datadir='/Users/shelter/mxnet-cnn-plate-recognition'
+#    head = '%(asctime)-15s %(message)s'
+#    logging.basicConfig(level =logging.DEBUG,format=head)
+#    devs = [mx.cpu(i) for i in range(num_gpus)]
 #    model = mx.model.FeedForward(ctx=devs, #使用GPU来跑
 #                                 symbol = network,
-#                                 num_epoch = 15,
-#				 #optimizer = 'adam',
+#                                 num_epoch = num_epoch,
+#                                 #optimizer = 'adam',
 #                                 learning_rate = 0.5,
-#                                 #lr_scheduler=mx.misc.FactorScheduler(step=5), 
-#				 wd = 0.00001,
+#                                 lr_scheduler=mx.misc.FactorScheduler(step=5),
+#                                 wd = 0.00001,
 #                                 initializer = mx.init.Xavier(factor_type="in", magnitude=2.34),
-#			         momentum = 0.9)
-#    batch_size = 8
-#    data_train = DataIter(40000, batch_size, 7, 30, 120)
-#    data_test = DataIter(10000, batch_size,7, 30, 120)
+#                                 momentum = 0.9)
 #
-#    head = '%(asctime)-15s %(message)s'
-#    logging.basicConfig(level=logging.DEBUG, format=head)
-#    model.fit(X = data_train, eval_data = data_test, eval_metric = Accuracy, batch_end_callback=mx.callback.Speedometer(batch_size, 50))
-#    model.save("/data/mxnet/cnn-ocr-04")
+#    train_dataiter = mx.io.ImageRecordIter(
+#            path_imgrec=datadir+"/train_train.rec",
+#            #mean_img=datadir+"/train_train.bin",
+#            rand_crop=True,
+#            rand_mirror=True,
+#            data_shape=(3,30,120),
+#            batch_size=batch_size,
+#            preprocess_threads=4)
+#    test_dataiter = mx.io.ImageRecordIter(
+#            path_imgrec=datadir+"/train_val.rec",
+#            #mean_img=datadir+"/train_val.bin",
+#            rand_crop=False,
+#            rand_mirror=False,
+#            data_shape=(3,30,120),
+#            batch_size=batch_size,
+#            preprocess_threads=4)
+#
+#    model.fit(X = train_dataiter, eval_data = test_dataiter, eval_metric = Accuracy, batch_end_callback=mx.callback.Speedometer(batch_size, 50))
+#    model.save("/data/mxnet/cnn-ocr-02")
 #    print gen_rand()
 #
+
+def train():
+    network = get_ocrnet()
+    devs = [mx.cpu(i) for i in range(2)]
+    model = mx.model.FeedForward(ctx=devs, #使用GPU来跑
+                                 symbol = network,
+                                 num_epoch = 15,
+				 #optimizer = 'adam',
+                                 learning_rate = 0.5,
+                                 #lr_scheduler=mx.misc.FactorScheduler(step=5), 
+				 wd = 0.00001,
+                                 initializer = mx.init.Xavier(factor_type="in", magnitude=2.34),
+			         momentum = 0.9)
+    batch_size = 8
+    data_train = DataIter(100, batch_size, 7, 30, 120)
+    data_test = DataIter(100, batch_size,7, 30, 120)
+
+    head = '%(asctime)-15s %(message)s'
+    logging.basicConfig(level=logging.DEBUG, format=head)
+    model.fit(X = data_train, eval_data = data_test, eval_metric = Accuracy, batch_end_callback=mx.callback.Speedometer(batch_size, 50))
+    model.save("/data/mxnet/cnn-ocr-04")
+    print gen_rand()
+
 
 if __name__ == '__main__':
     train();
