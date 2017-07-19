@@ -2,6 +2,7 @@
 
 ------
 
+本项目地址：https://github.com/huxiaoman7/mxnet-cnn-plate-recognition.git
 车牌识别包含两部分：车牌检测和车牌识别。本模型主要用于车牌的识别。
 
 
