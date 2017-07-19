@@ -21,20 +21,20 @@ import mxnet.misc
 import multiprocessing
 
 class OneBatch(object):
-    def __init__(self, data_names, data, label_names, label):
+    def __init__(self, data, label):
         self.data = data
         self.label = label
-        self.data_names = data_names
-        self.label_names = label_names
+#        self.data_names = data_names
+#        self.label_names = label_names
 
-    @property
-    def provide_data(self):
-        return [(n, x.shape) for n, x in zip(self.data_names, self.data)]
-
-    @property
-    def provide_label(self):
-        return [(n, x.shape) for n, x in zip(self.label_names, self.label)]
-
+#    @property
+#    def provide_data(self):
+#        return [(n, x.shape) for n, x in zip(self.data_names, self.data)]
+#
+#    @property
+#    def provide_label(self):
+#        return [(n, x.shape) for n, x in zip(self.label_names, self.label)]
+#
 
 #多进程操作读取数据
 class DataIter(mx.io.DataIter):
@@ -67,7 +67,7 @@ class DataIter(mx.io.DataIter):
             data_all = [mx.nd.array(data)]
 	    label_all = [mx.nd.array(label)]
 	    # 创建一个 Batch 的数据
-	    data_batch = OneBatch(data_all,label_all,data_names,label_names)
+	    data_batch = OneBatch(data_all,label_all)
 	    # block = True,允许在队列满的时候阻塞，timeout = None, 永不超时
 	    self.q.put(obj = data_batch,block = True,timeout = None)
     def iter_next(self):
@@ -219,24 +219,24 @@ def Accuracy(label, pred):
     return 1.0 * hit / total
 
 #增加自适应的学习率模块
-def _get_lr_scheduler(args, kv):
-    if 'lr_factor' not in args or args.lr_factor >= 1:        
-        return (args.lr, None)    
-    epoch_size = args.num_examples / args.batch_size    
-    if 'dist' in args.kv_store:        
-        epoch_size /= kv.num_workers    
-    begin_epoch = args.load_epoch if args.load_epoch else 0    
-    step_epochs = [int(l) for l in args.lr_step_epochs.split(',')]    
-    lr = args.lr    
-    for s in step_epochs:        
-        if begin_epoch >= s:            
-            lr *= args.lr_factor    
-    if lr != args.lr:        
-        logging.info('Adjust learning rate to %e for epoch %d' %(lr, begin_epoch))    
-
-    steps = [epoch_size * (x-begin_epoch) for x in step_epochs if x-begin_epoch > 0]    
-    return (lr, mx.lr_scheduler.MultiFactorScheduler(step=steps, factor=args.lr_factor))
-
+#def _get_lr_scheduler(args, kv):
+#    if 'lr_factor' not in args or args.lr_factor >= 1:        
+#        return (args.lr, None)    
+#    epoch_size = args.num_examples / args.batch_size    
+#    if 'dist' in args.kv_store:        
+#        epoch_size /= kv.num_workers    
+#    begin_epoch = args.load_epoch if args.load_epoch else 0    
+#    step_epochs = [int(l) for l in args.lr_step_epochs.split(',')]    
+#    lr = args.lr    
+#    for s in step_epochs:        
+#        if begin_epoch >= s:            
+#            lr *= args.lr_factor    
+#    if lr != args.lr:        
+#        logging.info('Adjust learning rate to %e for epoch %d' %(lr, begin_epoch))    
+#
+#    steps = [epoch_size * (x-begin_epoch) for x in step_epochs if x-begin_epoch > 0]    
+#    return (lr, mx.lr_scheduler.MultiFactorScheduler(step=steps, factor=args.lr_factor))
+#
 #def train():
 #    network = get_ocrnet()
 #    batch_size = 8
@@ -280,7 +280,7 @@ def _get_lr_scheduler(args, kv):
 
 def train():
     network = get_ocrnet()
-    devs = [mx.cpu(i) for i in range(2)]
+    devs = [mx.cpu(i) for i in range(8)]
     model = mx.model.FeedForward(ctx=devs, #使用GPU来跑
                                  symbol = network,
                                  num_epoch = 15,
@@ -297,7 +297,7 @@ def train():
     head = '%(asctime)-15s %(message)s'
     logging.basicConfig(level=logging.DEBUG, format=head)
     model.fit(X = data_train, eval_data = data_test, eval_metric = Accuracy, batch_end_callback=mx.callback.Speedometer(batch_size, 50))
-    model.save("/data/mxnet/cnn-ocr-04")
+    model.save("/data/mxnet/cnn-ocr-model")
     print gen_rand()
 
 
