@@ -2,6 +2,7 @@
 """ test.py:对任意一张或一个文件夹的车牌图片做识别预测
     输入:单张图片地址或文件夹地址
     输出:单张图片的准确率或文件夹下所有图片的准确率
+    本代码禁止外传
 """
 
 __author__ = "Huxiaoman"
@@ -83,7 +84,6 @@ def Accuracy_pred(label,pred):
     acc_col = 1.0 * hit / total
     print ("预测行准确率为:" + str(acc_row))
     print ("预测列准确率为:" + str(acc_col))
-    #print acc_row,acc_col
     return acc_row,acc_col
 
 #批量读取测试图片
@@ -164,7 +164,7 @@ def TestRecognizeBatch(path):
         print label[i]
 	#print pred
 	predlist.append(pred)
-	Accuracy_pred(label[i],predlist[i])
+	#Accuracy_pred(label[i],predlist[i])
         row,col= Accuracy_pred(label[i],predlist[i])
 	row_list.append(row)
 	col_list.append(col)
