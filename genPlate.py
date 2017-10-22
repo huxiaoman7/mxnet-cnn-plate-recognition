@@ -1,6 +1,6 @@
 #coding=utf-8
-""" genPlate.py:生成随机车牌
-    本代码禁止外传    
+""" 
+   genPlate.py:生成随机车牌
 """
 
 __author__ = "Huxiaoman"
