@@ -1,5 +1,7 @@
 #coding=utf-8
-""" genPlate.py:生成随机车牌"""
+""" genPlate.py:生成随机车牌
+    本代码禁止外传    
+"""
 
 __author__ = "Huxiaoman"
 __copyright__ = "Copyright (c) 2017 "
@@ -225,7 +227,7 @@ class GenPlate:
                 cv2.imwrite(outputPath + "/" + str(i).zfill(2) + ".jpg", img);
 		outfile.write(str(plate)+"\n")
 G = GenPlate("./font/platech.ttf",'./font/platechar.ttf',"./NoPlates")
-
+#G.genBatch(100,2,range(31,65),"./plate_100",(272,72))
 
 if __name__=='__main__':
     G.genBatch(int(sys.argv[1]),2,range(31,65),sys.argv[2],(272,72))
