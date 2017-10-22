@@ -24,78 +24,78 @@ class OneBatch(object):
     def __init__(self, data, label):
         self.data = data
         self.label = label
-#        self.data_names = data_names
-#        self.label_names = label_names
+        self.data_names = data_names
+        self.label_names = label_names
 
-#    @property
-#    def provide_data(self):
-#        return [(n, x.shape) for n, x in zip(self.data_names, self.data)]
-#
-#    @property
-#    def provide_label(self):
-#        return [(n, x.shape) for n, x in zip(self.label_names, self.label)]
-#
+    @property
+    def provide_data(self):
+        return [(n, x.shape) for n, x in zip(self.data_names, self.data)]
+
+    @property
+    def provide_label(self):
+        return [(n, x.shape) for n, x in zip(self.label_names, self.label)]
+
 
 #多进程操作读取数据
-class DataIter(mx.io.DataIter):
-    def __init__(self,count,batch_size,num_label,height,width):
-        super(DataIter,self).__init__()
-        self.batch_size = batch_size
-        self.cursor = -batch_size
-        self.num_data = count
-        self.height = height
-        self.width = width
-        self.provide_data = [('data',(batch_size,3,height,width))]
-        self.provide_label = [('softmax_label',(self.batch_size,num_label))]
-        # 首先定义一个Queue对象，用来存储 Prefetch 的数据
-	self.q = multiprocessing.Queue(maxsize = 2)
-        # 创建4个读取数据的进程，具体的读取方法在self.write中
-        self.pws = [multiprocessing.Process(target = self.write) for i in range(4)]
-        for pw in self.pws:
-	    pw.daemon = True
-	    pw.start()
-
-    def write(self):
-        while True:
-	    for i in range(self.batch_size):
-	        # 获取一张图片,numpy.array 格式
-                one_img = func_get_img_data()
-		# 获取该图片的label数据, numpy.array格式
-		one_label = func_get_label_data()
-		data.append(one_img)
-		label.append(one_label)
-            data_all = [mx.nd.array(data)]
-	    label_all = [mx.nd.array(label)]
-	    # 创建一个 Batch 的数据
-	    data_batch = OneBatch(data_all,label_all)
-	    # block = True,允许在队列满的时候阻塞，timeout = None, 永不超时
-	    self.q.put(obj = data_batch,block = True,timeout = None)
-    def iter_next(self):
-	if self.q.empty():
-	    logging.debug("Waiting for data")
-	if self.iter_next():
-	    return self.q.get(block = True,timeout = None)
-	else:
-	    raise StopIteration
-
-    def reset(self):
-	self.cursor = -self.batch_size + (self.cursor%self.num_data) % self.batch_size
-
-#class OCRBatch(object):
-#    def __init__(self, data_names, data, label_names, label):
-#        self.data = data
-#        self.label = label
-#        self.data_names = data_names
-#        self.label_names = label_names
+#class DataIter(mx.io.DataIter):
+#    def __init__(self,count,batch_size,num_label,height,width):
+#        super(DataIter,self).__init__()
+#        self.batch_size = batch_size
+#        self.cursor = -batch_size
+#        self.num_data = count
+#        self.height = height
+#        self.width = width
+#        self.provide_data = [('data',(batch_size,3,height,width))]
+#        self.provide_label = [('softmax_label',(self.batch_size,num_label))]
+#        # 首先定义一个Queue对象，用来存储 Prefetch 的数据
+#	self.q = multiprocessing.Queue(maxsize = 2)
+#        # 创建4个读取数据的进程，具体的读取方法在self.write中
+#        self.pws = [multiprocessing.Process(target = self.write) for i in range(4)]
+#        for pw in self.pws:
+#	    pw.daemon = True
+#	    pw.start()
 #
-#    @property
-#    def provide_data(self):
-#        return [(n, x.shape) for n, x in zip(self.data_names, self.data)]
+#    def write(self):
+#        while True:
+#	    for i in range(self.batch_size):
+#	        # 获取一张图片,numpy.array 格式
+#                one_img = func_get_img_data()
+#		# 获取该图片的label数据, numpy.array格式
+#		one_label = func_get_label_data()
+#		data.append(one_img)
+#		label.append(one_label)
+#            data_all = [mx.nd.array(data)]
+#	    label_all = [mx.nd.array(label)]
+#	    # 创建一个 Batch 的数据
+#	    data_batch = OneBatch(data_all,label_all)
+#	    # block = True,允许在队列满的时候阻塞，timeout = None, 永不超时
+#	    self.q.put(obj = data_batch,block = True,timeout = None)
+#    def iter_next(self):
+#	if self.q.empty():
+#	    logging.debug("Waiting for data")
+#	if self.iter_next():
+#	    return self.q.get(block = True,timeout = None)
+#	else:
+#	    raise StopIteration
 #
-#    @property
-#    def provide_label(self):
-#        return [(n, x.shape) for n, x in zip(self.label_names, self.label)]
-#
+#    def reset(self):
+#	self.cursor = -self.batch_size + (self.cursor%self.num_data) % self.batch_size
+
+class OCRBatch(object):
+    def __init__(self, data_names, data, label_names, label):
+        self.data = data
+        self.label = label
+        self.data_names = data_names
+        self.label_names = label_names
+
+    @property
+    def provide_data(self):
+        return [(n, x.shape) for n, x in zip(self.data_names, self.data)]
+
+    @property
+    def provide_label(self):
+        return [(n, x.shape) for n, x in zip(self.label_names, self.label)]
+
 def rand_range(lo,hi):
     return lo+r(hi-lo);
 
@@ -123,36 +123,36 @@ def gen_sample(genplate, width, height):
     img = img.transpose(2, 0, 1)
     return label, img
 
-#class OCRIter(mx.io.DataIter):
-#    def __init__(self, count, batch_size, num_label, height, width):
-#        super(OCRIter, self).__init__()
-#        self.genplate = GenPlate("./font/platech.ttf",'./font/platechar.ttf','./NoPlates')
-#        self.batch_size = batch_size
-#        self.count = count
-#        self.height = height
-#        self.width = width
-#        self.provide_data = [('data', (batch_size, 3, height, width))]
-#        self.provide_label = [('softmax_label', (self.batch_size, num_label))]
-#        print "start"
-#    def __iter__(self):
-#
-#        for k in range(self.count / self.batch_size):
-#            data = []
-#            label = []
-#            for i in range(self.batch_size):
-#                num, img = gen_sample(self.genplate, self.width, self.height)
-#                data.append(img)
-#                label.append(num)
-#
-#            data_all = [mx.nd.array(data)]
-#            label_all = [mx.nd.array(label)]
-#            data_names = ['data']
-#            label_names = ['softmax_label']
-#            data_batch = OCRBatch(data_names, data_all, label_names, label_all)
-#            yield data_batch
-#
-#    def reset(self):
-#        pass
+class OCRIter(mx.io.DataIter):
+    def __init__(self, count, batch_size, num_label, height, width):
+        super(OCRIter, self).__init__()
+        self.genplate = GenPlate("./font/platech.ttf",'./font/platechar.ttf','./NoPlates')
+        self.batch_size = batch_size
+        self.count = count
+        self.height = height
+        self.width = width
+        self.provide_data = [('data', (batch_size, 3, height, width))]
+        self.provide_label = [('softmax_label', (self.batch_size, num_label))]
+        print "start"
+    def __iter__(self):
+
+        for k in range(self.count / self.batch_size):
+            data = []
+            label = []
+            for i in range(self.batch_size):
+                num, img = gen_sample(self.genplate, self.width, self.height)
+                data.append(img)
+                label.append(num)
+
+            data_all = [mx.nd.array(data)]
+            label_all = [mx.nd.array(label)]
+            data_names = ['data']
+            label_names = ['softmax_label']
+            data_batch = OCRBatch(data_names, data_all, label_names, label_all)
+            yield data_batch
+
+    def reset(self):
+        pass
 
 def get_ocrnet():
     data = mx.symbol.Variable('data')
@@ -280,7 +280,7 @@ def Accuracy(label, pred):
 
 def train():
     network = get_ocrnet()
-    devs = [mx.cpu(i) for i in range(8)]
+    devs = [mx.cpu(i) for i in range(2)]
     model = mx.model.FeedForward(ctx=devs, #使用GPU来跑
                                  symbol = network,
                                  num_epoch = 15,
@@ -291,8 +291,8 @@ def train():
                                  initializer = mx.init.Xavier(factor_type="in", magnitude=2.34),
 			         momentum = 0.9)
     batch_size = 8
-    data_train = DataIter(100, batch_size, 7, 30, 120)
-    data_test = DataIter(100, batch_size,7, 30, 120)
+    data_train = OCRIter(100, batch_size, 7, 30, 120)
+    data_test = OCRIter(100, batch_size,7, 30, 120)
 
     head = '%(asctime)-15s %(message)s'
     logging.basicConfig(level=logging.DEBUG, format=head)
