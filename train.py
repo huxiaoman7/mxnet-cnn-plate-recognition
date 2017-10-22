@@ -1,6 +1,6 @@
 #coding=utf-8
-""" train.py:训练CNN模型
-    本代码禁止外传
+"""
+   train.py:训练CNN模型
 """
 
 __author__ = "Huxiaoman"
