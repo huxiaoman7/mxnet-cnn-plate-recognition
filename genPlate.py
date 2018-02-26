@@ -59,7 +59,7 @@ def rot(img,angel,shape,max_angel):
         pts2 = np.float32([[0,0],[interval,size[1]  ],[size[0]-interval,0  ],[size[0],size_o[1]]])
     M  = cv2.getPerspectiveTransform(pts1,pts2);
     dst = cv2.warpPerspective(img,M,size);
-    return dst;
+    return dst
 
 def rotRandrom(img, factor, size):
     """
@@ -71,7 +71,7 @@ def rotRandrom(img, factor, size):
                        [shape[1] - r(factor), shape[0] - r(factor)]])
     M = cv2.getPerspectiveTransform(pts1, pts2);
     dst = cv2.warpPerspective(img, M, size);
-    return dst;
+    return dst
 
 def tfactor(img):
     """
@@ -144,7 +144,7 @@ def addNoise(img,sdev = 0.5,avg=10):
     img[:,:,0] =  AddNoiseSingleChannel(img[:,:,0]);
     img[:,:,1] =  AddNoiseSingleChannel(img[:,:,1]);
     img[:,:,2] =  AddNoiseSingleChannel(img[:,:,2]);
-    return img;
+    return img
 
 
 class GenPlate:
@@ -186,7 +186,7 @@ class GenPlate:
 
     def genPlateString(self,pos,val):
         '''
-	生成车牌String,存为label图片
+	生成车牌String,存为图片
         生成车牌list,存为label
         '''
         plateStr = "";
