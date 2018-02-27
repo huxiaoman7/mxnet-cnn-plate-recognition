@@ -48,7 +48,8 @@ output:
 
 ------
 ### 参考资料
+```
 1.http://blog.csdn.net/relocy/article/details/52174198
 2.https://github.com/szad670401/learning-dl/tree/master/mxnet/ocr
 
-
+```
