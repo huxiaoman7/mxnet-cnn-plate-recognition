@@ -24,6 +24,8 @@ index = {"京": 0, "沪": 1, "津": 2, "渝": 3, "冀": 4, "晋": 5, "蒙": 6, "
          "J": 49, "K": 50, "L": 51, "M": 52, "N": 53, "P": 54, "Q": 55, "R": 56, "S": 57, "T": 58, "U": 59, "V": 60,
          "W": 61, "X": 62, "Y": 63, "Z": 64};
 
+index_letter = {"A":0, "B":1, "C":2, "D":3, "E":4, "F":5, "G":6, "H":7, "I":8, "J":9, "K":10, "L":11, "M":12, "N":13, "O":14, "P":15, "Q":16, "R":17, "S":18, "T":19, "U":20, "V":21, "W":22, "X":23, "Y":24, "Z":25}
+
 chars = ["京", "沪", "津", "渝", "冀", "晋", "蒙", "辽", "吉", "黑", "苏", "浙", "皖", "闽", "赣", "鲁", "豫", "鄂", "湘", "粤", "桂",
              "琼", "川", "贵", "云", "藏", "陕", "甘", "青", "宁", "新", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A",
              "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "U", "V", "W", "X",
@@ -51,6 +53,7 @@ def rot(img,angel,shape,max_angel):
     """
     size_o = [shape[1],shape[0]]
     size = (shape[1]+ int(shape[0]*cos((float(max_angel )/180) * 3.14)),shape[0])
+    #print size
     interval = abs( int( sin((float(angel) /180) * 3.14)* shape[0]));
     pts1 = np.float32([[0,0],[0,size_o[1]],[size_o[0],0],[size_o[0],size_o[1]]])
     if(angel>0):
@@ -153,7 +156,7 @@ class GenPlate:
         self.fontC =  ImageFont.truetype(fontCh,43,0);
         self.fontE =  ImageFont.truetype(fontEng,60,0);
         self.img=np.array(Image.new("RGB", (226,70),(255,255,255)))
-        self.bg  = cv2.resize(cv2.imread("./images/template.bmp"),(226,70));
+        self.bg  = cv2.resize(cv2.imread("./images/g1.jpg"),(226,70));
         self.smu = cv2.imread("./images/smu2.jpg");
         self.noplates_path = [];
         for parent,parent_folder,filenames in os.walk(NoPlates):
@@ -166,7 +169,7 @@ class GenPlate:
         offset= 2 ;
         self.img[0:70,offset+8:offset+8+23]= GenCh(self.fontC,val[0]);
         self.img[0:70,offset+8+23+6:offset+8+23+6+23]= GenCh1(self.fontE,val[1]);
-        for i in range(5):
+        for i in range(6):
             base = offset+8+23+6+23+17 +i*23 + i*6 ;
             self.img[0:70, base  : base+23]= GenCh1(self.fontE,val[i+2]);
         return self.img
@@ -180,18 +183,19 @@ class GenPlate:
             com = rotRandrom(com,10,(com.shape[1],com.shape[0]));
             com = tfactor(com)
             com = random_envirment(com,self.noplates_path);
-            com = AddGauss(com, 1+r(4));
+            # 添加高斯模糊
+	    #com = AddGauss(com, 1+r(4));
             com = addNoise(com);
             return com
 
     def genPlateString(self,pos,val):
         '''
-	生成车牌String,存为图片
+	    生成车牌String,存为图片
         生成车牌list,存为label
         '''
         plateStr = "";
         plateList=[]
-        box = [0,0,0,0,0,0,0];
+        box = [0,0,0,0,0,0,0,0];
         if(pos!=-1):
             box[pos]=1;
         for unit,cpos in zip(box,range(len(box))):
@@ -206,12 +210,15 @@ class GenPlate:
                 elif cpos == 1:
                     plateStr += chars[41+r(24)]
                     plateList.append(plateStr)
+                elif cpos == range(3,9)[r(5)]:
+                    plateStr += chars[41+r(24)]
+                    plateList.append(plateStr)
                 else:
-                    plateStr += chars[31 + r(34)]
+                    plateStr += chars[31:41][r(10)]
                     plateList.append(plateStr)
         plate = [plateList[0]]
         b = [plateList[i][-1] for i in range(len(plateList))]
-        plate.extend(b[1:7])
+        plate.extend(b[1:8])
         return plateStr,plate
 
     # 将生成的车牌图片写入文件夹，对应的label写入label.txt
@@ -223,7 +230,8 @@ class GenPlate:
                 plateStr,plate = G.genPlateString(-1,-1)
                 print plateStr,plate
 		img =  G.generate(plateStr);
-                img = cv2.resize(img,size);
+                #print size
+		img = cv2.resize(img,size);
                 cv2.imwrite(outputPath + "/" + str(i).zfill(2) + ".jpg", img);
 		outfile.write(str(plate)+"\n")
 G = GenPlate("./font/platech.ttf",'./font/platechar.ttf',"./NoPlates")
