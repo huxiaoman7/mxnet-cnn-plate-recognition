@@ -1,6 +1,6 @@
 #coding=utf-8
 """ 
-   genPlate.py:生成随机车牌
+   genGreenPlate.py:生成新能源绿色车牌
 """
 
 __author__ = "Huxiaoman"
@@ -24,7 +24,6 @@ index = {"京": 0, "沪": 1, "津": 2, "渝": 3, "冀": 4, "晋": 5, "蒙": 6, "
          "J": 49, "K": 50, "L": 51, "M": 52, "N": 53, "P": 54, "Q": 55, "R": 56, "S": 57, "T": 58, "U": 59, "V": 60,
          "W": 61, "X": 62, "Y": 63, "Z": 64};
 
-index_letter = {"A":0, "B":1, "C":2, "D":3, "E":4, "F":5, "G":6, "H":7, "I":8, "J":9, "K":10, "L":11, "M":12, "N":13, "O":14, "P":15, "Q":16, "R":17, "S":18, "T":19, "U":20, "V":21, "W":22, "X":23, "Y":24, "Z":25}
 
 chars = ["京", "沪", "津", "渝", "冀", "晋", "蒙", "辽", "吉", "黑", "苏", "浙", "皖", "闽", "赣", "鲁", "豫", "鄂", "湘", "粤", "桂",
              "琼", "川", "贵", "云", "藏", "陕", "甘", "青", "宁", "新", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A",
@@ -105,6 +104,7 @@ def GenCh(f,val):
     """
     生成中文字符
     """
+    # 此处需要将字体颜色换为黑色
     img=Image.new("RGB", (45,70),(255,255,255))
     draw = ImageDraw.Draw(img)
     draw.text((0, 3),val,(0,0,0),font=f)
@@ -116,6 +116,7 @@ def GenCh1(f,val):
     """
     生成英文字符
     """
+    # 此处需要将字体颜色换为黑色
     img=Image.new("RGB", (23,70),(255,255,255))
     draw = ImageDraw.Draw(img)
     draw.text((0, 2),val.decode('utf-8'),(0,0,0),font=f)
@@ -169,22 +170,26 @@ class GenPlate:
         offset= 2 ;
         self.img[0:70,offset+8:offset+8+23]= GenCh(self.fontC,val[0]);
         self.img[0:70,offset+8+23+6:offset+8+23+6+23]= GenCh1(self.fontE,val[1]);
-        for i in range(6):
-            base = offset+8+23+6+23+17 +i*23 + i*6 ;
-            self.img[0:70, base  : base+23]= GenCh1(self.fontE,val[i+2]);
+	for i in range(6):
+	    #生成绿色车牌的时候这里需要改一下
+            base = offset+8+23+6+23+17 +i*23 ;
+	    #print base
+            #print self.img[0:70, base  : base+23].shape
+	    self.img[0:70, base  : base+23]= GenCh1(self.fontE,val[i+2]);
         return self.img
     
     def generate(self,text):
-        if len(text) == 9:
+        #print len(text)
+        if len(text) == 10:
+	    # 注意此处和生成蓝牌车不同，需要字符颜色为黑色
             fg = self.draw(text.decode(encoding="utf-8"));
-            fg = cv2.bitwise_not(fg);
-            com = cv2.bitwise_or(fg,self.bg);
-            com = rot(com,r(60)-30,com.shape,30);
-            com = rotRandrom(com,10,(com.shape[1],com.shape[0]));
-            com = tfactor(com)
-            com = random_envirment(com,self.noplates_path);
+            com = cv2.bitwise_and(fg,self.bg);
+            #com = rot(com,r(60)-30,com.shape,30);
+            #com = rotRandrom(com,10,(com.shape[1],com.shape[0]));
+            #com = tfactor(com)
+            #com = random_envirment(com,self.noplates_path);
             # 添加高斯模糊
-	    #com = AddGauss(com, 1+r(4));
+	    #com = AddGauss(com, 1+r(2));
             com = addNoise(com);
             return com
 
@@ -210,9 +215,14 @@ class GenPlate:
                 elif cpos == 1:
                     plateStr += chars[41+r(24)]
                     plateList.append(plateStr)
-                elif cpos == range(3,9)[r(5)]:
-                    plateStr += chars[41+r(24)]
+		#新能源车牌的生成有规则,小型客车第三位是D/F，大型客车最后一位是D/F
+                elif cpos == 2:
+		    plateStr += ['D','F'][r(2)]
                     plateList.append(plateStr)
+		# 对第3~6位添加任意字符
+                #elif cpos == range(2,8)[r(6)]:
+                #    plateStr += chars[41+r(24)]
+                #    plateList.append(plateStr)
                 else:
                     plateStr += chars[31:41][r(10)]
                     plateList.append(plateStr)
@@ -230,7 +240,7 @@ class GenPlate:
                 plateStr,plate = G.genPlateString(-1,-1)
                 print plateStr,plate
 		img =  G.generate(plateStr);
-                #print size
+                #print type(img)
 		img = cv2.resize(img,size);
                 cv2.imwrite(outputPath + "/" + str(i).zfill(2) + ".jpg", img);
 		outfile.write(str(plate)+"\n")
